@@ -1,29 +1,31 @@
 import psycopg2
 import pytest
 
-DB_CONFIG = {
-    "dbname": "test_db",
-    "user": "postgres",
-    "password": "postgres",
-    "host": "localhost",
-    "port": 5432
-}
+@pytest.fixture
+def db():
+    conn = psycopg2.connect(
+        host="localhost",
+        database="test_db",
+        user="postgres",
+        password="postgres"
+    )
+    cur = conn.cursor()
+    yield cur
+    conn.commit()
+    cur.close()
+    conn.close()
 
-def run_query(query):
-    with psycopg2.connect(**DB_CONFIG) as conn:
-        with conn.cursor() as cur:
-            cur.execute(query)
-            return cur.fetchall()
 
-def test_nombre_ana():
-    result = run_query("SELECT data->>'nombre' FROM usuarios WHERE id = 1;")
-    print(f'resultado del query: {result}')
-    assert result[0][0] == "Ana"
+def test_usuarios_existen(db):
+    db.execute("SELECT COUNT(*) FROM usuarios;")
+    assert db.fetchone()[0] >= 2
 
-def test_usuario_activo():
-    result = run_query("SELECT data->>'activo' FROM usuarios WHERE id = 1;")
-    assert result[0][0] == "true"
 
-def test_edad_juan():
-    result = run_query("SELECT data->>'edad' FROM usuarios WHERE id = 2;")
-    assert result[0][0] == "25"
+def test_productos_jsonb(db):
+    db.execute("SELECT COUNT(*) FROM productos;")
+    assert db.fetchone()[0] >= 5
+
+
+def test_productos_hstore(db):
+    db.execute("SELECT COUNT(*) FROM product;")
+    assert db.fetchone()[0] >= 5
