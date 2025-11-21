@@ -61,3 +61,37 @@ SELECT svals(atributos) FROM product;
 -- ¿Cuántos productos tienen el atributo color?
 SELECT COUNT(*) FROM product
 WHERE atributos ? 'color';
+
+
+--Ejercicios avanzados
+--1 - Indexar la columna HSTORE con GIN
+-- Crea un índice para mejorar el rendimiento de búsquedas por clave.
+CREATE INDEX hind ON product USING GIST(atributos);
+
+--2 - Usar funciones agregadas con HSTORE
+-- Agrupa productos por marca y cuenta cuántos hay por cada una.
+SELECT COUNT(*) FROM product
+WHERE atributos -> 'marca'='avon';
+
+--3 - Convertir HSTORE a JSON y viceversa
+-- Practica con hstore_to_json() y json_to_hstore() si tienes datos mixtos.
+SELECT hstore_to_json(atributos) AS atributos_json
+FROM product;
+
+--4 - Validar existencia de múltiples claves
+-- Usa ?& para verificar si un producto tiene tanto color como peso.
+SELECT * FROM product
+WHERE atributos ?& ARRAY['color','peso'];
+
+--5 - Crear una función que reciba un HSTORE y devuelva un resumen
+-- Por ejemplo, una función que devuelva "Producto X: marca=Y, color=Z".
+CREATE OR REPLACE FUNCTION resumen_producto(attrs hstore)
+RETURNS text AS $$
+DECLARE
+    marca text := attrs->'marca';
+    color text := attrs->'color';
+BEGIN
+    RETURN format('Producto: marca=%s, color=%s', marca, color);
+END;
+$$ LANGUAGE plpgsql;
+
